@@ -1,6 +1,8 @@
 const cells = document.querySelectorAll(".cell");
 const statusText = document.querySelector("#statusText");
 const restartBtn = document.querySelector("#restartBtn");
+const playXBtn = document.querySelector("#playXBtn");
+const playOBtn = document.querySelector("#playOBtn");
 const winConditions = [
     [0, 1, 2],
     [3, 4, 5],
@@ -12,22 +14,43 @@ const winConditions = [
     [2, 4, 6]
 ];
 let options = ["", "", "", "", "", "", "", "", ""];
-let currentPlayer = "X";
+let currentPlayer = {
+    "X": "player",
+    "O": "bot"
+}
+let turn = "X";
 let running = false;
 
 initializeGame();
 
-function initializeGame(){
+function initializeGame() {
     cells.forEach(cell => cell.addEventListener("click", cellClicked));
     restartBtn.addEventListener("click", restartGame);
-    statusText.textContent = `${currentPlayer}'s turn`;
+    playXBtn.addEventListener("click", chooseSymbol);
+    playOBtn.addEventListener("click", chooseSymbol);
+    statusText.textContent = `${currentPlayer[turn]}'s turn`;
     running = true;
+    if (currentPlayer[turn] === "bot") {
+        botMove(options);
+    }
 }
 
-function cellClicked(){
+function chooseSymbol() {
+    if (event.target === playXBtn) {
+        currentPlayer.X = "player";
+        currentPlayer.O = "bot";
+        restartGame();
+    } else {
+        currentPlayer.O = "player";
+        currentPlayer.X = "bot";
+        restartGame();
+    }
+}
+
+function cellClicked() {
     const cellIndex = this.getAttribute("cellIndex");
 
-    if(options[cellIndex] != "" || !running){
+    if(options[cellIndex] != "" || !running || currentPlayer[turn] == "bot") {
         return;
     }
 
@@ -35,20 +58,43 @@ function cellClicked(){
     checkWinner();
 }
 
-function updateCell(cell, index){
-    options[index] = currentPlayer;
-    cell.textContent = currentPlayer;
+function updateCell(cell, index) {
+    options[index] = turn;
+    cell.textContent = turn;
 }
 
-function changePlayer(){
-    currentPlayer = (currentPlayer == "X") ? "O" : "X";
-    statusText.textContent = `${currentPlayer}'s turn`;
+function changePlayer() { 
+    turn = (turn == "X") ? "O" : "X";
+    statusText.textContent = `${currentPlayer[turn]}'s turn`;
+
+    if (currentPlayer[turn] === "bot") {
+        botMove(options);
+    }
 }
 
-function checkWinner(){
-    let roundWon = false;
+function botMove() {
+    const move = botBrain(options); 
+    updateCell(cells[move], move);  
+    checkWinner();
+}
 
-    for(let i = 0; i < winConditions.length; i++){
+// Return desired move index
+// currentPlayer is an object (dictionary) that stores the role of each player ('X' and 'O').
+// The keys are 'X' and 'O', and the values represent whether each player is a "player" or a "bot".
+// board is the current game state
+
+function botBrain(board) {
+    while (true) {
+        move = Math.floor(Math.random() * 9);
+        if (board[move] == "") {
+            break;
+        }
+    }
+    return move;
+}
+
+function roundWon() {
+    for(let i = 0; i < winConditions.length; i++) {
         const condition = winConditions[i];
         const cellA = options[condition[0]];
         const cellB = options[condition[1]];
@@ -58,29 +104,32 @@ function checkWinner(){
             continue;
         }
         if(cellA == cellB && cellB == cellC){
-            roundWon = true;
-            break;
+            return true;
         }
     }
+    return false;
+}
 
-    if(roundWon){
-        statusText.textContent = `${currentPlayer} wins!`;
+function checkWinner() {
+    if(roundWon()){ 
+        statusText.textContent = `${currentPlayer[turn]} wins!`;
         running = false;
-    }
-    else if(!options.includes("")){
+    } else if(!options.includes("")){
         statusText.textContent = `Draw!`;
         running = false;
-    }
-    else{
+    } else {
         changePlayer();
     }
 }
 
-function restartGame(){
-    currentPlayer = "X";
+function restartGame() {
+    turn = "X";
     options = ["", "", "", "", "", "", "", "", ""];
-    statusText.textContent = `${currentPlayer}'s turn`;
+    statusText.textContent = `${currentPlayer[turn]}'s turn`;
     cells.forEach(cell => cell.textContent = "");
     running = true;
 
+    if (currentPlayer[turn] === "bot") {
+        botMove(options);
+    }
 }
