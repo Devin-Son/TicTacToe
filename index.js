@@ -73,7 +73,7 @@ function changePlayer() {
 }
 
 function botMove() {
-    const move = botBrain(options); 
+    const move = botBrain(options, true); 
     updateCell(cells[move], move);  
     checkWinner();
 }
@@ -83,38 +83,66 @@ function botMove() {
 // The keys are 'X' and 'O', and the values represent whether each player is a "player" or a "bot".
 // board is the current game state
 
-function botBrain(board) {
-    while (true) {
-        move = Math.floor(Math.random() * 9);
-        if (board[move] == "") {
+function botBrain(board, isMaximizing) {
+    let reversePlayer = reverseDictionary(currentPlayer);
+    score = (isMaximizing) ? 1 : -1;
+    switch (roundWon(board)) {
+        case reversePlayer["bot"]:
+            console.log("bot has won in this scenario");
+            return 1 * score;
             break;
+        case reversePlayer["player"]:
+            console.log("player has won in this scenario");
+            return -1 * score;
+        case "draw":
+            return 0;
+    }
+    let bestScore = -10 * score;
+    let bestMove;
+    for (let i = 0; i < 9; i++) {
+        if (board[i] == "") {
+            board[i] = (isMaximizing) ? reversePlayer["bot"] : reversePlayer["player"];
+            let score = botBrain(board, !isMaximizing);
+            console.log(`Score at board position ${board} is ${score}`);
+            board[i] = "";
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = i;
+            }
         }
     }
-    return move;
+    console.log('finished');
+    console.log(bestMove);
+    return bestMove;
 }
 
-function roundWon() {
+function roundWon(board) {
     for(let i = 0; i < winConditions.length; i++) {
         const condition = winConditions[i];
-        const cellA = options[condition[0]];
-        const cellB = options[condition[1]];
-        const cellC = options[condition[2]];
+        const cellA = board[condition[0]];
+        const cellB = board[condition[1]];
+        const cellC = board[condition[2]];
 
         if(cellA == "" || cellB == "" || cellC == ""){
             continue;
         }
         if(cellA == cellB && cellB == cellC){
-            return true;
+            return cellA;
         }
     }
+
+    if(!board.includes("")) {
+        return 'draw';
+    }
+
     return false;
 }
 
 function checkWinner() {
-    if(roundWon()){ 
+    if(roundWon(options)){ 
         statusText.textContent = `${currentPlayer[turn]} wins!`;
         running = false;
-    } else if(!options.includes("")){
+    } else if(!options.includes("")) {
         statusText.textContent = `Draw!`;
         running = false;
     } else {
@@ -132,4 +160,11 @@ function restartGame() {
     if (currentPlayer[turn] === "bot") {
         botMove(options);
     }
+}
+
+function reverseDictionary(obj) {
+    return Object.entries(obj).reduce((reversed, [key, value]) => {
+        reversed[value] = reversed[value] ? [].concat(reversed[value], key) : key;
+        return reversed;
+    }, {});
 }
