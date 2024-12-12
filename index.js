@@ -50,7 +50,7 @@ function chooseSymbol() {
 function cellClicked() {
     const cellIndex = this.getAttribute("cellIndex");
 
-    if(options[cellIndex] != "" || !running || currentPlayer[turn] == "bot") {
+    if (options[cellIndex] != "" || !running || currentPlayer[turn] == "bot") {
         return;
     }
 
@@ -65,6 +65,7 @@ function updateCell(cell, index) {
 
 function changePlayer() { 
     turn = (turn == "X") ? "O" : "X";
+    console.log(`turn is ${turn}`);
     statusText.textContent = `${currentPlayer[turn]}'s turn`;
 
     if (currentPlayer[turn] === "bot") {
@@ -73,8 +74,22 @@ function changePlayer() {
 }
 
 function botMove() {
-    const move = botBrain(options, true); 
-    updateCell(cells[move], move);  
+    let reversePlayer = reverseDictionary(currentPlayer);
+    let bestScore = -10;
+    let board = options;
+    let bestMove;
+    for (let i = 0; i < 9; i++) {
+        if (board[i] == "") {
+            board[i] = reversePlayer["bot"];
+            let score = botBrain(board, false);
+            board[i] = "";
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = i;
+            }
+        }
+    }
+    updateCell(cells[bestMove], bestMove);  
     checkWinner();
 }
 
@@ -88,36 +103,33 @@ function botBrain(board, isMaximizing) {
     score = (isMaximizing) ? 1 : -1;
     switch (roundWon(board)) {
         case reversePlayer["bot"]:
-            console.log("bot has won in this scenario");
-            return 1 * score;
+            // console.log(`bot wins in case ${board}`);
+            return 1;
             break;
         case reversePlayer["player"]:
-            console.log("player has won in this scenario");
-            return -1 * score;
+            // console.log(`player wins in case ${board}`);
+            return -1;
         case "draw":
             return 0;
     }
     let bestScore = -10 * score;
-    let bestMove;
     for (let i = 0; i < 9; i++) {
         if (board[i] == "") {
             board[i] = (isMaximizing) ? reversePlayer["bot"] : reversePlayer["player"];
-            let score = botBrain(board, !isMaximizing);
-            console.log(`Score at board position ${board} is ${score}`);
+            let testscore = botBrain(board, !isMaximizing);
             board[i] = "";
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = i;
+            if (isMaximizing) {
+                bestScore = Math.max(bestScore, testscore);
+            } else {
+                bestScore = Math.min(bestScore, testscore);
             }
         }
     }
-    console.log('finished');
-    console.log(bestMove);
-    return bestMove;
+    return bestScore;
 }
 
 function roundWon(board) {
-    for(let i = 0; i < winConditions.length; i++) {
+    for (let i = 0; i < winConditions.length; i++) {
         const condition = winConditions[i];
         const cellA = board[condition[0]];
         const cellB = board[condition[1]];
@@ -131,7 +143,7 @@ function roundWon(board) {
         }
     }
 
-    if(!board.includes("")) {
+    if (!board.includes("")) {
         return 'draw';
     }
 
@@ -139,11 +151,12 @@ function roundWon(board) {
 }
 
 function checkWinner() {
-    if(roundWon(options)){ 
-        statusText.textContent = `${currentPlayer[turn]} wins!`;
-        running = false;
-    } else if(!options.includes("")) {
+    if (roundWon(options) == 'draw') {
+        console.log(`draw`);
         statusText.textContent = `Draw!`;
+        running = false;
+    } else if (roundWon(options)) { 
+        statusText.textContent = `${currentPlayer[turn]} wins!`;
         running = false;
     } else {
         changePlayer();
