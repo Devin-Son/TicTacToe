@@ -65,7 +65,6 @@ function updateCell(cell, index) {
 
 function changePlayer() { 
     turn = (turn == "X") ? "O" : "X";
-    console.log(`turn is ${turn}`);
     statusText.textContent = `${currentPlayer[turn]}'s turn`;
 
     if (currentPlayer[turn] === "bot") {
@@ -103,11 +102,9 @@ function botBrain(board, isMaximizing) {
     score = (isMaximizing) ? 1 : -1;
     switch (roundWon(board)) {
         case reversePlayer["bot"]:
-            // console.log(`bot wins in case ${board}`);
             return 1;
             break;
         case reversePlayer["player"]:
-            // console.log(`player wins in case ${board}`);
             return -1;
         case "draw":
             return 0;
@@ -152,7 +149,6 @@ function roundWon(board) {
 
 function checkWinner() {
     if (roundWon(options) == 'draw') {
-        console.log(`draw`);
         statusText.textContent = `Draw!`;
         running = false;
     } else if (roundWon(options)) { 
