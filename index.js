@@ -1,4 +1,5 @@
 const cells = document.querySelectorAll(".cell");
+const moveText = document.querySelector("#moveTime")
 const statusText = document.querySelector("#statusText");
 const restartBtn = document.querySelector("#restartBtn");
 const playXBtn = document.querySelector("#playXBtn");
@@ -73,6 +74,7 @@ function changePlayer() {
 }
 
 function botMove() {
+    const startTime = performance.now();
     let reversePlayer = reverseDictionary(currentPlayer);
     let bestScore = -10;
     let board = options;
@@ -80,7 +82,8 @@ function botMove() {
     for (let i = 0; i < 9; i++) {
         if (board[i] == "") {
             board[i] = reversePlayer["bot"];
-            let score = botBrain(board, false);
+            let score = botBrain(board, false, -Infinity, Infinity);
+            console.log(`score of ${i} is ${score}`);
             board[i] = "";
             if (score > bestScore) {
                 bestScore = score;
@@ -88,6 +91,11 @@ function botMove() {
             }
         }
     }
+    const endTime = performance.now();
+    const elapsedTime = (endTime - startTime).toFixed(2); // Time in milliseconds, rounded to two decimal places
+
+    moveText.textContent = `Move time: ${elapsedTime} ms`;
+    
     updateCell(cells[bestMove], bestMove);  
     checkWinner();
 }
@@ -97,9 +105,9 @@ function botMove() {
 // The keys are 'X' and 'O', and the values represent whether each player is a "player" or a "bot".
 // board is the current game state
 
-function botBrain(board, isMaximizing) {
+function botBrain(board, isMaximizing, alpha, beta) {
     let reversePlayer = reverseDictionary(currentPlayer);
-    score = (isMaximizing) ? 1 : -1;
+    let testscore;
     switch (roundWon(board)) {
         case reversePlayer["bot"]:
             return 1;
@@ -109,16 +117,32 @@ function botBrain(board, isMaximizing) {
         case "draw":
             return 0;
     }
-    let bestScore = -10 * score;
-    for (let i = 0; i < 9; i++) {
-        if (board[i] == "") {
-            board[i] = (isMaximizing) ? reversePlayer["bot"] : reversePlayer["player"];
-            let testscore = botBrain(board, !isMaximizing);
-            board[i] = "";
-            if (isMaximizing) {
+    let bestScore = (isMaximizing) ? -Infinity : Infinity;
+
+    if (isMaximizing) {
+        for (let i = 0; i < 9; i++) {
+            if (board[i] == "") {
+                board[i] = reversePlayer["bot"];
+                testscore = botBrain(board, false, alpha, beta);
+                board[i] = "";
                 bestScore = Math.max(bestScore, testscore);
-            } else {
+                alpha = Math.max(alpha, testscore);
+                if (beta <= alpha) {
+                    break;
+                }
+            }
+        }
+    } else {
+        for (let i = 0; i < 9; i++) {
+            if (board[i] == "") {
+                board[i] = reversePlayer["player"];
+                testscore = botBrain(board, true, alpha, beta);
+                board[i] = "";
                 bestScore = Math.min(bestScore, testscore);
+                beta = Math.min(beta, testscore);
+                if (beta <= alpha) {
+                    break;
+                }
             }
         }
     }
